@@ -46,102 +46,148 @@ int welcomeScreen(){
 	return validInput(2);
 }
 
-void login(char filename[STRING_SIZE]){ // goto main menu, make key do something
+int login(char filename[STRING_SIZE]){ // goto main menu, make key do something
 	FILE *common;
-	common = fopen("common", "r");
 	
-	int nValidUser=0, nValid=0, count=0, flag=0;
+	int nSelect=0, nValidUser=0, nValid=0, count=0, flag=0, nContinue=0;
 	char key[STRING_SIZE], line_buffer[STRING_SIZE];
 	struct credentials user;
 	
-	printf("Enter username: ");
-	getc(stdin);
-	fgets(user.username, STRING_SIZE, stdin);
-	
-	printf("Enter password: ");
-	fgets(user.password, STRING_SIZE, stdin);
-	
-	while(fgets(line_buffer, MAX_LINE, common) != NULL && !flag){
-		count++;
+	while(!nContinue){
+		common = fopen("common", "r");
+		nValidUser=0,nValid=0,count=0,flag=0; // reset all values
 		
-		if(count==1 && strcmp(user.username, line_buffer) == 0) // check every username
-			nValidUser=1;
+		printf("Enter username: ");
+		getc(stdin);
+		fgets(user.username, STRING_SIZE, stdin);
+		
+		printf("Enter password: ");
+		fgets(user.password, STRING_SIZE, stdin);
+		printf("%s\n%s", user.username, user.password);
+		
+		while(fgets(line_buffer, MAX_LINE, common) != NULL && !flag){
+			count++;
 			
-		if(count==2 && nValidUser){ // check password if username is valid
-			if(strcmp(user.password, line_buffer) == 0)
-				nValid=1;
-			else
-				flag=1; // exit loop if username does not match password
+			if(count==1 && strcmp(user.username, line_buffer) == 0) // check every username
+				nValidUser=1;
+				
+			if(count==2 && nValidUser){ // check password if username is valid
+				if(strcmp(user.password, line_buffer) == 0)
+					nValid=1;
+				else
+					flag=1; // exit loop if username does not match password
+			}
+			
+			if(nValid && count==3){ // copy line_buffer to filename to use in main
+				strcpy(filename, line_buffer);
+				flag=1;
+			}
+			if(count==3) // reset count -> move to next user
+				count=0;
 		}
 		
-		if(nValid && count==3){ // copy line_buffer to filename to use in main
-			strcpy(filename, line_buffer);
-			flag=1;
+		if(!nValid){
+			printf("Username/Password not found.\n");
+			printf("[1] Try again?\n");
+			printf("[2] Exit\n");
+
+			nSelect = validInput(2);
+			if(nSelect == 1);
+			else{
+				fclose(common);
+				return 0;
+			}
 		}
-		if(count==3) // reset count -> move to next user
-			count=0;
-	}
-	
-	
-	if(!nValid)
-		printf("Username/Password not found.\n");
-	else{
-		printf("Enter key: ");
-		fgets(key, STRING_SIZE, stdin);
-	}
-	strtok(filename, "\n");
+		else{
+			printf("Enter key: ");
+			fgets(key, STRING_SIZE, stdin);
+			nContinue=1;
+		}
+		
 	fclose(common);
+	}
+	
+	strtok(filename, "\n");
+
+	return 1;
 }
 
-void newAccount(char filename[STRING_SIZE]){ // TODO: create key
+int newAccount(char filename[STRING_SIZE]){ // TODO: create key
 	FILE *common, *user_file;
-	common = fopen("common", "a+");
 	
-	int nValid=1, nValidUsername=1, nValidFilename=1, count=0;
+	int nSelect=0, nValid=1, nValidUsername=1, nValidFilename=1, count=0, nContinue=0;
 	char line_buffer[STRING_SIZE];
 	struct credentials user;
 	
-	printf("Enter username: ");
-	getc(stdin);
-	fgets(user.username, STRING_SIZE, stdin);
-	
-	printf("Enter password: ");
-	fgets(user.password, STRING_SIZE, stdin);
-	
-	printf("Enter file name: ");
-	fgets(filename, STRING_SIZE, stdin);
-	
-	while(fgets(line_buffer, MAX_LINE, common) != NULL && nValid==1){
-		count++;
-		if(count==1 && strcmp(user.username, line_buffer) == 0){ // check every username
-			nValidUsername=0;
-			nValid=0;
+	while(!nContinue){
+		common = fopen("common", "a+");
+		nValid=1,nValidUsername=1,nValidFilename=1,count=0; // Reset all values
+		printf("Enter username: ");
+		getc(stdin);
+		fgets(user.username, STRING_SIZE, stdin);
+		
+		printf("Enter password: ");
+		fgets(user.password, STRING_SIZE, stdin);
+		
+		printf("Enter file name: ");
+		fgets(filename, STRING_SIZE, stdin);
+		
+		while(fgets(line_buffer, MAX_LINE, common) != NULL && nValid==1){
+			count++;
+			if(count==1 && strcmp(user.username, line_buffer) == 0){ // check every username
+				nValidUsername=0;
+				nValid=0;
+			}
+			
+			if(count==3 && strcmp(filename, line_buffer) == 0){ // check every filename
+				nValidFilename=0;
+				nValid=0;
+			}
+			
+			if(count == 3) // reset count to 0
+				count = 0;
 		}
 		
-		if(count==3 && strcmp(filename, line_buffer) == 0){ // check every filename
-			nValidFilename=0;
-			nValid=0;
+		if(!nValidFilename){
+			printf("Filename is already in use.\n");
+			printf("[1] Try again?\n");
+			printf("[2] Exit\n");
+			nSelect = validInput(2);
+				if(nSelect == 1);
+				else{
+					fclose(common);
+					return 0;
+				}
 		}
-		
-		if(count == 3) // reset count to 0
-			count = 0;
+
+		else if(!nValidUsername){
+			printf("Username is already in use.\n");
+			printf("[1] Try again?\n");
+			printf("[2] Exit\n");
+			nSelect = validInput(2);
+				if(nSelect == 1);
+				else{
+					fclose(common);
+					return 0;
+				}
+			
+		}
+
+		else{
+			nContinue = 1;
+			fprintf(common, "%s", user.username);
+			fprintf(common, "%s", user.password);
+			fprintf(common, "%s", filename);
+			
+			strtok(filename, "\n");
+			user_file = fopen(filename, "w"); // create user file
+			fclose(user_file);
+		}
+
+		fclose(common);
 	}
 	
-	if(!nValidFilename)
-		printf("Filename is already in use.\n");
-	else if(!nValidUsername)
-		printf("Username is already in use.\n");
-	else{
-		fprintf(common, "%s", user.username);
-		fprintf(common, "%s", user.password);
-		fprintf(common, "%s", filename);
-		
-		strtok(filename, "\n");
-		user_file = fopen(filename, "w"); // create user file
-		fclose(user_file);
-	}
-	
-	fclose(common);
+	return 1;
 }
 
 int mainMenu(){
@@ -366,20 +412,20 @@ int main(void){
 	// FILE *common, *user_file;
 	//	user_file = fopen(filename, "r");
 	
-	int nInput;
+	int nInput, nSuccess;
 	char filename[STRING_SIZE];
 	
 	nInput = welcomeScreen(); // open welcome screen. return user input to nInput
 	
 	switch (nInput){
 		case 1:
-			login(filename);
+			nSuccess = login(filename);
 			break;
 		case 2:
-			newAccount(filename); // fix if wrong
+			nSuccess = newAccount(filename);
 			break;
 	}
-	while(nInput!=6){
+	while(nInput!=6 && nSuccess){
 		
 		nInput = mainMenu(); // open main menu. return user input to nInput
 	
