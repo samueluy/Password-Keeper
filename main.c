@@ -11,7 +11,7 @@ Ascii art (Joshua)
 #include <string.h>
 
 #define STRING_SIZE 256
-#define MAX_LINE 512
+#define MAX_LINE 256
 
 struct credentials{ // CHANGE THIS MABOI
 	char account_name[STRING_SIZE];
@@ -59,7 +59,6 @@ void login(char filename[STRING_SIZE]){ // goto main menu, make key do something
 	fgets(user.username, STRING_SIZE, stdin);
 	
 	printf("Enter password: ");
-	getc(stdin);
 	fgets(user.password, STRING_SIZE, stdin);
 	
 	while(fgets(line_buffer, MAX_LINE, common) != NULL && !flag){
@@ -107,7 +106,6 @@ void newAccount(char filename[STRING_SIZE]){ // TODO: create key
 	fgets(user.username, STRING_SIZE, stdin);
 	
 	printf("Enter password: ");
-	getc(stdin);
 	fgets(user.password, STRING_SIZE, stdin);
 	
 	printf("Enter file name: ");
@@ -162,9 +160,10 @@ void displayCredentials(char filename[STRING_SIZE]){
 	FILE *user_file;
 	user_file = fopen(filename, "r");
 	
-	int count;
+	int count=0;
 	char line_buffer[STRING_SIZE];
 	
+
 	while(fgets(line_buffer, MAX_LINE, user_file) != NULL){
 		count++;
 		if(count==1)
@@ -188,9 +187,12 @@ void addPassword(char filename[STRING_SIZE]){ // check if unique application
 	struct credentials user;
 	
 	printf("Enter account name: ");
+	getc(stdin);
 	fgets(user.account_name, STRING_SIZE, stdin);
+
 	printf("Enter username: ");
 	fgets(user.username, STRING_SIZE, stdin);
+
 	printf("Enter password: ");
 	fgets(user.password, STRING_SIZE, stdin);
 	
@@ -223,7 +225,9 @@ void changePassword(char filename[STRING_SIZE]){
 	struct credentials user;
 	
 	printf("Enter account name: ");
+	getc(stdin);
 	fgets(user.account_name, STRING_SIZE, stdin);
+	
 	printf("Enter password: ");
 	fgets(user.password, STRING_SIZE, stdin);
 	
