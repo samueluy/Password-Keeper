@@ -20,19 +20,18 @@ struct credentials{ // CHANGE THIS MABOI
 };
 
 int validInput(int nMaxInput){ // Asks the user for input till valid (use for integer-navigated menus)
-	int nInput, nValid=0;\
+	int nInput=0, nValid=0;\
 	
 	printf("Enter: ");
 	scanf("%d", &nInput);
 	while(!nValid){
-		fflush(stdin);
-		if(nInput <= 0 || nInput > nMaxInput){
-		nValid=0;
+		if(nInput > 0 && nInput <= nMaxInput)
+			nValid=1;
+		else{
 		printf("Invalid!\nPlease enter a valid input: ");
+		getc(stdin);
 		scanf("%d", &nInput);
 		}
-		else
-			nValid=1;
 	}
 	
 	return nInput;
@@ -453,7 +452,5 @@ int main(void){
 	
 //	fclose(common);
 
-	
-		
 	return 0;
 }
