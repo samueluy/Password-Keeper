@@ -20,7 +20,7 @@ struct credentials{ // CHANGE THIS MABOI
 };
 
 int validInput(int nMaxInput){ // Asks the user for input till valid (use for integer-navigated menus)
-	int nInput=0, nValid=0;\
+	int nInput=0, nValid=0;
 	
 	printf("Enter: ");
 	scanf("%d", &nInput);
