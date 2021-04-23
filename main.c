@@ -37,6 +37,78 @@ int validInput(int nMaxInput){ // Asks the user for input till valid (use for in
 	return nInput;
 }
 
+void encrypt_algo(char input[STRING_SIZE], int key){
+	
+    int i;
+    int temp=0;
+    int count=0;
+    char temp_text[STRING_SIZE];
+    
+    strcpy(temp_text, input);
+    
+    for(i=0; i<strlen(temp_text); i++){
+        if(i==0){
+        	temp_text[i] += key;
+            temp=temp_text[i];
+		}/* THIS PART IS NOT WORKING sad
+        else if(count==1){
+            temp_text[i] += key;
+            temp=temp_text[i];
+        }*/
+        else{
+            temp_text[i] += temp;
+            temp=temp_text[i];
+        }
+        
+        if(count==4){ // CHANGE THIS PARA MAGING MAS VERSETILE (maybe salt?)
+            count=0;
+            //temp=0;
+        }
+        count++;
+    }
+    strcpy(input, temp_text);
+}
+
+void decrypt_algo(char input[STRING_SIZE], int key){
+	
+    int i;
+    int temp=0;
+    int count=strlen(input)-1; // get string length for subtract key count
+    char temp_text[STRING_SIZE];
+    
+    strcpy(temp_text, input);
+    for(i=strlen(temp_text)-1; i>=0; i--){
+        if(i == 0){
+        	temp_text[i] -= key;
+		}
+       /* else if(count%5==0){
+            temp_text[i] -= key;
+            temp=temp_text[i];
+        }*/
+        else{
+        	temp=temp_text[i-1];
+            temp_text[i] -= temp;
+        }
+        count--;
+    }
+    strcpy(input, temp_text);
+}
+
+void encrypt(struct credentials *user, int key){
+
+    encrypt_algo(user->account_name, key); // add struct to algo
+    encrypt_algo(user->password, key);
+    encrypt_algo(user->username, key);
+}
+
+void decrypt(struct credentials user, int key){
+
+    decrypt_algo(user.account_name, key); // add struct to algo
+    decrypt_algo(user.password, key);
+    decrypt_algo(user.username, key);
+    
+   printf("\nDecrypt: %s", user.account_name);
+}
 int welcomeScreen(){
 	
 	printf("[1] Login\n");
@@ -201,7 +273,7 @@ int mainMenu(){
 	return validInput(6);
 }
 
-void displayCredentials(char filename[STRING_SIZE]){
+void displayCredentials(struct credentials user, int key, char filename[STRING_SIZE]){
 	FILE *user_file;
 	user_file = fopen(filename, "r");
 	
@@ -223,7 +295,7 @@ void displayCredentials(char filename[STRING_SIZE]){
 	fclose(user_file);
 }
 
-void addPassword(char filename[STRING_SIZE]){ // check if unique application
+void addPassword(struct credentials *user, int key, char filename[STRING_SIZE]){ // check if unique application
 	FILE *user_file;
 	user_file = fopen(filename, "a+");
 	
@@ -251,6 +323,7 @@ void addPassword(char filename[STRING_SIZE]){ // check if unique application
 	}
 	
 	if(unique_name){
+		encrypt(*user, key);
 		fprintf(user_file, "%s", user.account_name);
 		fprintf(user_file, "%s", user.username);
 		fprintf(user_file, "%s", user.password);

@@ -10,25 +10,24 @@ struct credentials{ // CHANGE THIS MABOI
 	char password[STRING_SIZE];
 };
 
-void encrypt_algo(char input[STRING_SIZE], char temp_key[STRING_SIZE]){
+void encrypt_algo(char input[STRING_SIZE], int key){
 	
     int i;
-    int key=0;
     int temp=0;
     int count=0;
     char temp_text[STRING_SIZE];
     
-    for(i=0; i<strlen(temp_key); i++)
-    	key += temp_key[i];
-    
     strcpy(temp_text, input);
     
     for(i=0; i<strlen(temp_text); i++){
-        count++;
-        if(count==1){
+        if(i==0){
+        	temp_text[i] += key;
+            temp=temp_text[i];
+		}/* THIS PART IS NOT WORKING sad
+        else if(count==1){
             temp_text[i] += key;
             temp=temp_text[i];
-        }
+        }*/
         else{
             temp_text[i] += temp;
             temp=temp_text[i];
@@ -36,76 +35,70 @@ void encrypt_algo(char input[STRING_SIZE], char temp_key[STRING_SIZE]){
         
         if(count==4){ // CHANGE THIS PARA MAGING MAS VERSETILE (maybe salt?)
             count=0;
-            temp=0;
+            //temp=0;
         }
+        count++;
     }
     strcpy(input, temp_text);
 }
 
-void decrypt_algo(char input[STRING_SIZE], char temp_key[STRING_SIZE]){
+void decrypt_algo(char input[STRING_SIZE], int key){
 	
     int i;
-    int key=0;
     int temp=0;
-    int count=0;
+    int count=strlen(input)-1; // get string length for subtract key count
     char temp_text[STRING_SIZE];
     
-    for(i=0; i<strlen(temp_key); i++)
-    	key += temp_key[i];
-    
     strcpy(temp_text, input);
-    
-    for(i=strlen(temp_text); i<0; i--){
-        count++;
-        if(count==1){
+    for(i=strlen(temp_text)-1; i>=0; i--){
+        if(i == 0){
+        	temp_text[i] -= key;
+		}
+       /* else if(count%5==0){
             temp_text[i] -= key;
             temp=temp_text[i];
-        }
+        }*/
         else{
         	temp=temp_text[i-1];
             temp_text[i] -= temp;
         }
-        
-        if(count==4){ // CHANGE THIS PARA MAGING MAS VERSETILE (maybe salt?)
-            count=0;
-            temp=0;
-        }
+        count--;
     }
     strcpy(input, temp_text);
 }
 
-void encrypt(struct credentials *user, char key[STRING_SIZE]){
+void encrypt(struct credentials *user, int key){
 
     encrypt_algo(user->account_name, key); // add struct to algo
     encrypt_algo(user->password, key);
     encrypt_algo(user->username, key);
 }
 
-void decrypt(struct credentials user, char key[STRING_SIZE]){
+void decrypt(struct credentials user, int key){
 
     decrypt_algo(user.account_name, key); // add struct to algo
-    decrypt_algo(user.password, key);
-    decrypt_algo(user.username, key);
+   // decrypt_algo(user.password, key);
+   // decrypt_algo(user.username, key);
     
-    printf("\n%s",user.account_name);
+   printf("\nDecrypt: %s", user.account_name);
 }
 
 int main(void){
 	
-	char key[STRING_SIZE];
+	int key = 10;
 	
     struct credentials user;
-    printf("Enter account name: ");
+   /* printf("Enter account name: ");
     scanf("%s", user.account_name);
    // fgets(user.account_name, STRING_SIZE, stdin);
-   fflush(stdin);
+    fflush(stdin);
     printf("Enter key: ");
     scanf("%s", key);
-   // fgets(key, STRING_SIZE, stdin);
+   // fgets(key, STRING_SIZE, stdin);*/
+   	strcpy(user.account_name, "helloo");
     encrypt(&user, key);
     
-    
-    printf("\n%s", user.account_name);
+    printf("\nEncrypt: %s", user.account_name);
     decrypt(user, key);
     
 
