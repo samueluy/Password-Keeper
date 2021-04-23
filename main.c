@@ -37,7 +37,17 @@ int validInput(int nMaxInput){ // Asks the user for input till valid (use for in
 	return nInput;
 }
 
-void encrypt_algo(char input[STRING_SIZE], int key){
+int keyGen(char temp_key[STRING_SIZE]){
+	int i, key=0;
+	
+	for(i=0; i<strlen(temp_key); i++){
+		key += temp_key[i];
+	}
+	
+	return key;
+}
+
+void encrypt_algo(char input[STRING_SIZE], int key){ // for some reason, yung first lang nag iiba
 	
     int i;
     int temp=0;
@@ -92,6 +102,8 @@ void decrypt_algo(char input[STRING_SIZE], int key){
         count--;
     }
     strcpy(input, temp_text);
+    
+    printf("%s", input);
 }
 
 void encrypt(struct credentials *user, int key){
@@ -106,8 +118,6 @@ void decrypt(struct credentials user, int key){
     decrypt_algo(user.account_name, key); // add struct to algo
     decrypt_algo(user.password, key);
     decrypt_algo(user.username, key);
-    
-   printf("\nDecrypt: %s", user.account_name);
 }
 int welcomeScreen(){
 	
@@ -117,11 +127,11 @@ int welcomeScreen(){
 	return validInput(2);
 }
 
-int login(char filename[STRING_SIZE]){ // goto main menu, make key do something
+int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main menu, make key do something
 	FILE *common;
 	
 	int nSelect=0, nValidUser=0, nValid=0, count=0, flag=0, nContinue=0;
-	char key[STRING_SIZE], line_buffer[STRING_SIZE];
+	char line_buffer[STRING_SIZE];
 	struct credentials user;
 	
 	while(!nContinue){
@@ -134,8 +144,7 @@ int login(char filename[STRING_SIZE]){ // goto main menu, make key do something
 		
 		printf("Enter password: ");
 		fgets(user.password, STRING_SIZE, stdin);
-		printf("%s\n%s", user.username, user.password);
-		
+				
 		while(fgets(line_buffer, MAX_LINE, common) != NULL && !flag){
 			count++;
 			
@@ -171,7 +180,7 @@ int login(char filename[STRING_SIZE]){ // goto main menu, make key do something
 		}
 		else{
 			printf("Enter key: ");
-			fgets(key, STRING_SIZE, stdin);
+			fgets(temp_key, STRING_SIZE, stdin);
 			nContinue=1;
 		}
 		
@@ -183,7 +192,7 @@ int login(char filename[STRING_SIZE]){ // goto main menu, make key do something
 	return 1;
 }
 
-int newAccount(char filename[STRING_SIZE]){ // TODO: create key
+int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO: create key
 	FILE *common, *user_file;
 	
 	int nSelect=0, nValid=1, nValidUsername=1, nValidFilename=1, count=0, nContinue=0;
@@ -245,6 +254,9 @@ int newAccount(char filename[STRING_SIZE]){ // TODO: create key
 		}
 
 		else{
+			printf("\nEnter key: ");
+			fgets(temp_key, STRING_SIZE, stdin);
+			
 			nContinue = 1;
 			fprintf(common, "%s", user.username);
 			fprintf(common, "%s", user.password);
@@ -273,7 +285,7 @@ int mainMenu(){
 	return validInput(6);
 }
 
-void displayCredentials(struct credentials user, int key, char filename[STRING_SIZE]){
+void displayCredentials(char filename[STRING_SIZE], int key){
 	FILE *user_file;
 	user_file = fopen(filename, "r");
 	
@@ -282,20 +294,28 @@ void displayCredentials(struct credentials user, int key, char filename[STRING_S
 	
 
 	while(fgets(line_buffer, MAX_LINE, user_file) != NULL){
+		strtok(line_buffer, "\n");
 		count++;
-		if(count==1)
-			printf("Account: %s", line_buffer); // change bring to center.
-		else if(count==2)
-			printf("Username: %s", line_buffer);
+		if(count==1){
+			printf("Account: "); // change bring to center.
+			decrypt_algo(line_buffer, key);
+		}
+		else if(count==2){
+			printf("Username: "); // change bring to center.
+			decrypt_algo(line_buffer, key);
+		}
+			
 		else if(count==3){
-			printf("Password: %s\n", line_buffer);
+			printf("Password: "); // change bring to center.
+			decrypt_algo(line_buffer, key);
+			printf("\n");
 			count=0;
 		}
 	}
 	fclose(user_file);
 }
 
-void addPassword(struct credentials *user, int key, char filename[STRING_SIZE]){ // check if unique application
+void addPassword(char filename[STRING_SIZE], int key){ // check if unique application
 	FILE *user_file;
 	user_file = fopen(filename, "a+");
 	
@@ -323,10 +343,10 @@ void addPassword(struct credentials *user, int key, char filename[STRING_SIZE]){
 	}
 	
 	if(unique_name){
-		encrypt(*user, key);
-		fprintf(user_file, "%s", user.account_name);
-		fprintf(user_file, "%s", user.username);
-		fprintf(user_file, "%s", user.password);
+		encrypt(&user, key);
+		fprintf(user_file, "%s\n", user.account_name);
+		fprintf(user_file, "%s\n", user.username);
+		fprintf(user_file, "%s\n", user.password);
 	}
 	else
 		printf("Account name already exists.\n");
@@ -484,29 +504,33 @@ int main(void){
 	// FILE *common, *user_file;
 	//	user_file = fopen(filename, "r");
 	
-	int nInput, nSuccess;
-	char filename[STRING_SIZE];
+	int nInput, nSuccess, key;
+	char filename[STRING_SIZE], temp_key[STRING_SIZE];
+	
 	
 	nInput = welcomeScreen(); // open welcome screen. return user input to nInput
 	
 	switch (nInput){
 		case 1:
-			nSuccess = login(filename);
+			nSuccess = login(filename, temp_key);
 			break;
 		case 2:
-			nSuccess = newAccount(filename);
+			nSuccess = newAccount(filename, temp_key);
 			break;
 	}
+	
+	key = keyGen(temp_key);
+
 	while(nInput!=6 && nSuccess){
 		
 		nInput = mainMenu(); // open main menu. return user input to nInput
 	
 		switch (nInput){ // main menu choices
 			case 1:
-				displayCredentials(filename);
+				displayCredentials(filename, key);
 				break;
 			case 2:
-				addPassword(filename);
+				addPassword(filename, key);
 				break;
 			case 3:
 				changePassword(filename);
