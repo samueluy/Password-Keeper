@@ -1,13 +1,17 @@
 /*
 TODO:
-encryption
-for loop for all arrays to make them all 0
-password input '*"
-No need enter
-Ascii art (Joshua)
+
+encryption salt
+common file encryption (will change file name as well) (maybe make it hidden?)
+encryption fix (Key does not change everyting) (if 1 char, won't work)
+
+Ascii art (Align to center)
+Login to register
+clear screen (finish adding to all) + (Display credentials dissapperaing)
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <conio.h>
 
@@ -23,6 +27,7 @@ struct credentials{ // CHANGE THIS MABOI
 int validInput(int nMaxInput){ // Asks the user for input till valid (use for integer-navigated menus)
 	int nInput=0, nValid=0;
 	
+	printf("Enter: ");
 	nInput = getch() - '0';
 
 	while(!nValid){
@@ -30,6 +35,7 @@ int validInput(int nMaxInput){ // Asks the user for input till valid (use for in
 			nValid=1;
 		else{
 		printf("\nInvalid!\nPlease enter a valid input: ");
+		printf("Enter: ");
 		nInput = getch() - '0';
 		}
 	}
@@ -131,8 +137,22 @@ void decrypt(struct credentials user, int key){
     decrypt_algo(user.password, key);
     decrypt_algo(user.username, key);
 }
+void passwordKeeperArt(){
+	printf("  ____                                     _\n");
+	printf(" |  _ \\ __ _ ___ _____      _____  _ __ __| |\n");
+	printf(" | |_) / _` / __/ __\\ \\ /\\ / / _ \\| '__/ _` |\n");
+	printf(" |  __/ (_| \\__ \\__ \\\\ V  V / (_) | | | (_| |\n");
+	printf(" |_| __\\__,_|___/___/ \\_/\\_/ \\___/|_|  \\__,_|\n\n");
+	printf(	" | |/ /___  ___ _ __   ___ _ __              \n");
+	printf(" | ' // _ \\/ _ \\ '_ \\ / _ \\ '__|             \n");
+	printf(" | . \\  __/  __/ |_) |  __/ |                \n");
+	printf(" |_|\\_\\___|\\___| .__/ \\___|_|                \n");
+	printf("               |_|                           \n");
+}
+
 int welcomeScreen(){
 	
+	passwordKeeperArt();
 	printf("[1] Login\n");
 	printf("[2] Create a new account\n");
 	
@@ -146,6 +166,8 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 	char line_buffer[STRING_SIZE];
 	struct credentials user;
 	
+	system("cls");
+	passwordKeeperArt();
 	while(!nContinue){
 		common = fopen("common", "r");
 		nValidUser=0,nValid=0,count=0,flag=0; // reset all values
@@ -178,12 +200,17 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 		}
 		
 		if(!nValid){
+			system("cls");
+			passwordKeeperArt();
 			printf("\nUsername/Password not found.\n");
 			printf("[1] Try again?\n");
 			printf("[2] Exit\n");
 
 			nSelect = validInput(2);
-			if(nSelect == 1);
+			if(nSelect == 1){
+				system("cls");
+				passwordKeeperArt();
+			}
 			else{
 				fclose(common);
 				return 0;
@@ -210,11 +237,13 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 	char line_buffer[STRING_SIZE];
 	struct credentials user;
 	
+	system("cls");
+	passwordKeeperArt();
 	while(!nContinue){
 		common = fopen("common", "a+");
 		nValid=1,nValidUsername=1,nValidFilename=1,count=0; // Reset all values
 		
-		printf("Enter username: ");
+		printf("\nEnter username: ");
 		fgets(user.username, STRING_SIZE, stdin);
 		
 		printf("Enter password: ");
@@ -265,8 +294,8 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 		}
 
 		else{
-			printf("\nEnter key: ");
-			fgets(temp_key, STRING_SIZE, stdin);
+			printf("Enter key: ");
+			enterPass(temp_key);
 			
 			nContinue = 1;
 			fprintf(common, "%s", user.username);
@@ -286,6 +315,8 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 
 int mainMenu(){
 	
+	system("cls");
+	passwordKeeperArt();
 	printf("\n[1] Display all passwords\n");
 	printf("[2] Add a password\n");
 	printf("[3] Change a password\n");
@@ -334,8 +365,10 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	char line_buffer[STRING_SIZE];
 	struct credentials user;
 	
-	printf("Enter account name: ");
-	getc(stdin);
+	system("cls");
+	passwordKeeperArt();
+	
+	printf("\nEnter account name: ");
 	fgets(user.account_name, STRING_SIZE, stdin);
 
 	printf("Enter username: ");
