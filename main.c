@@ -9,6 +9,7 @@ Ascii art (Joshua)
 
 #include <stdio.h>
 #include <string.h>
+#include <conio.h>
 
 #define STRING_SIZE 256
 #define MAX_LINE 256
@@ -22,19 +23,30 @@ struct credentials{ // CHANGE THIS MABOI
 int validInput(int nMaxInput){ // Asks the user for input till valid (use for integer-navigated menus)
 	int nInput=0, nValid=0;
 	
-	printf("Enter: ");
-	scanf("%d", &nInput);
+	nInput = getch() - '0';
+
 	while(!nValid){
 		if(nInput > 0 && nInput <= nMaxInput)
 			nValid=1;
 		else{
-		printf("Invalid!\nPlease enter a valid input: ");
-		getc(stdin);
-		scanf("%d", &nInput);
+		printf("\nInvalid!\nPlease enter a valid input: ");
+		nInput = getch() - '0';
 		}
 	}
 	
 	return nInput;
+}
+
+void enterPass(char passwrd[STRING_SIZE]){ // Make password print '*' instead of the password itself for security
+	int i=0;
+	do{
+			passwrd[i]=getch();
+			if(passwrd[i]!='\r')
+				printf("*");
+			i++;
+		}
+		while(passwrd[i-1]!='\r');
+		passwrd[i-1]='\n';
 }
 
 int keyGen(char temp_key[STRING_SIZE]){
@@ -138,12 +150,11 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 		common = fopen("common", "r");
 		nValidUser=0,nValid=0,count=0,flag=0; // reset all values
 		
-		printf("Enter username: ");
-		getc(stdin);
+		printf("\nEnter username: ");
 		fgets(user.username, STRING_SIZE, stdin);
 		
 		printf("Enter password: ");
-		fgets(user.password, STRING_SIZE, stdin);
+		enterPass(user.password);
 				
 		while(fgets(line_buffer, MAX_LINE, common) != NULL && !flag){
 			count++;
@@ -167,7 +178,7 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 		}
 		
 		if(!nValid){
-			printf("Username/Password not found.\n");
+			printf("\nUsername/Password not found.\n");
 			printf("[1] Try again?\n");
 			printf("[2] Exit\n");
 
@@ -179,8 +190,8 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 			}
 		}
 		else{
-			printf("Enter key: ");
-			fgets(temp_key, STRING_SIZE, stdin);
+			printf("\nEnter key: ");
+			enterPass(temp_key);
 			nContinue=1;
 		}
 		
@@ -202,14 +213,14 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 	while(!nContinue){
 		common = fopen("common", "a+");
 		nValid=1,nValidUsername=1,nValidFilename=1,count=0; // Reset all values
+		
 		printf("Enter username: ");
-		getc(stdin);
 		fgets(user.username, STRING_SIZE, stdin);
 		
 		printf("Enter password: ");
-		fgets(user.password, STRING_SIZE, stdin);
+		enterPass(user.password);
 		
-		printf("Enter file name: ");
+		printf("\nEnter file name: ");
 		fgets(filename, STRING_SIZE, stdin);
 		
 		while(fgets(line_buffer, MAX_LINE, common) != NULL && nValid==1){
@@ -275,7 +286,7 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 
 int mainMenu(){
 	
-	printf("[1] Display all passwords\n");
+	printf("\n[1] Display all passwords\n");
 	printf("[2] Add a password\n");
 	printf("[3] Change a password\n");
 	printf("[4] Delete a password\n");
@@ -331,7 +342,7 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	fgets(user.username, STRING_SIZE, stdin);
 
 	printf("Enter password: ");
-	fgets(user.password, STRING_SIZE, stdin);
+		enterPass(user.password);
 	
 	while(fgets(line_buffer, MAX_LINE, user_file) != NULL){
 		count++;
