@@ -1,5 +1,6 @@
 /*
 TODO:
+(MODIFY) fgets to fscanf -> each credential will be per line
 
 (FEATURE) encryption salt
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
