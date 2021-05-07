@@ -1,12 +1,15 @@
 /*
 TODO:
-(MODIFY) fgets to fscanf -> each credential will be per line
+(MODIFY) if file is NULL
+(MODIFY) Functions in a different file
+(BACKUP) Create regular input for password
 
 (FEATURE) encryption salt
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
 (FEATURE) valid username (no space or other special character)
 (BUG) encryption fix (Key does not change everyting) (if 1 char, won't work)
 (BUG) cant detect if unique if key is wrong
+(BUG) Multiple passwords not encrypting and displaying well (lumalagpas sa ascii)
 
 (FEATURE) Ascii art (Align to center)
 (FEATURE) Login to register
@@ -33,6 +36,7 @@ int validInput(int nMaxInput){ // Asks the user for input till valid (use for in
 	
 	printf("Enter: ");
 	nInput = getch() - '0';
+//	scanf("%d", &nInput);
 
 	while(!nValid){
 		if(nInput > 0 && nInput <= nMaxInput)
@@ -41,6 +45,8 @@ int validInput(int nMaxInput){ // Asks the user for input till valid (use for in
 		printf("\nInvalid!\nPlease enter a valid input: ");
 		printf("Enter: ");
 		nInput = getch() - '0';
+	// using regular scanf
+	//	scanf("%d", &nInput);
 		}
 	}
 	
@@ -75,28 +81,26 @@ void encrypt_algo(char input[STRING_SIZE], int key){ // for some reason, yung fi
     int temp=0;
     int count=0;
     char temp_text[STRING_SIZE];
+    int reset = key % 10;
     
     strcpy(temp_text, input);
     
     for(i=0; i<strlen(temp_text); i++){
-        if(i==0){
+    	count++;
+        if(i==0){ // first character add key
         	temp_text[i] += key;
             temp=temp_text[i];
-		}/* THIS PART IS NOT WORKING sad
-        else if(count==1){
-            temp_text[i] += key;
+        }
+        else if(count == reset){
+        	temp_text[i] += key;
             temp=temp_text[i];
-        }*/
+            count=0;
+        }
+        
         else{
             temp_text[i] += temp;
             temp=temp_text[i];
-        }
-        
-        if(count==4){ // CHANGE THIS PARA MAGING MAS VERSETILE (maybe salt?)
-            count=0;
-            //temp=0;
-        }
-        count++;
+        }	
     }
     strcpy(input, temp_text);
 }
@@ -104,33 +108,31 @@ void encrypt_algo(char input[STRING_SIZE], int key){ // for some reason, yung fi
 void decrypt_algo(char input[STRING_SIZE], int key){
 	
     int i;
-    int temp=0;
-    int count=strlen(input)-1; // get string length for subtract key count
+    int count=strlen(input); // get string length for subtract key count
     char temp_text[STRING_SIZE];
+    int reset = key % 10;
     
     strcpy(temp_text, input);
+    
     for(i=strlen(temp_text)-1; i>=0; i--){
-        if(i == 0){
+    	if(i == 0) // first character of string
         	temp_text[i] -= key;
+        
+        else if(count % reset == 0){
+        	temp_text[i] -= key;
+        	
 		}
-       /* else if(count%5==0){
-            temp_text[i] -= key;
-            temp=temp_text[i];
-        }*/
-        else{
-        	temp=temp_text[i-1];
-            temp_text[i] -= temp;
-        }
+        else
+        	temp_text[i] -= temp_text[i-1];
+        
         count--;
-    }
+	}
+
     strcpy(input, temp_text);
 }
 
 void encrypt(struct credentials *user, int key){
-	user->account_name[strcspn(user->account_name,"\n")]=0;
-	user->password[strcspn(user->password,"\n")]=0;
-	user->username[strcspn(user->username,"\n")]=0;
-	
+
     encrypt_algo(user->account_name, key); // add struct to algo
     encrypt_algo(user->password, key);
     encrypt_algo(user->username, key);
@@ -172,15 +174,16 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 		nValidUser=0,nValid=0,count=0,flag=0; // reset all values
 		
 		printf("\nEnter username: ");
-		fgets(user.username, STRING_SIZE, stdin);
+		scanf("%s", user.username);
+	//	fgets(user.username, STRING_SIZE, stdin);
 		
 		printf("Enter password: ");
 		enterPass(user.password);
-		strncat(user.password, "\n", 1);
-				
-		while(fgets(line_buffer, MAX_LINE, common) != NULL && !flag){
+		
+		if(common != NULL){
+			while(!feof(common) && !flag){
 			count++;
-			
+			fscanf(common, "%s", line_buffer);
 			if(count==1 && strcmp(user.username, line_buffer) == 0) // check every username
 				nValidUser=1;
 				
@@ -197,38 +200,42 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 			}
 			if(count==3) // reset count -> move to next user
 				count=0;
-		}
-		
-		if(!nValid){
-			system("cls");
-			passwordKeeperArt();
-			printf("\nUsername/Password not found.\n[1] Try again?\n[2] Back\n[3] Exit\n");
+			}
 			
-			nSelect = validInput(3);
-			if(nSelect == 1){
+			if(!nValid){
 				system("cls");
 				passwordKeeperArt();
-			}
-			else if(nSelect == 2){
-				fclose(common);
-				return 2;
+				printf("\nUsername/Password not found.\n[1] Try again?\n[2] Back\n[3] Exit\n");
+				
+				nSelect = validInput(3);
+				if(nSelect == 1){
+					system("cls");
+					passwordKeeperArt();
+				}
+				else if(nSelect == 2){
+					fclose(common);
+					return 2;
+				}
+				else{
+					fclose(common);
+					return 3;
+				}
 			}
 			else{
-				fclose(common);
-				return 3;
+				printf("\nEnter key: ");
+				enterPass(temp_key);
+				nContinue=1;
 			}
+			
+		fclose(common);
 		}
 		else{
-			printf("\nEnter key: ");
-			enterPass(temp_key);
-			nContinue=1;
+			printf("\nNo account in the database. Please create an account.\n\nPress any key to continue...");
+			getch();
+			return 2;
 		}
-		
-	fclose(common);
 	}
-	
-	strtok(filename, "\n");
-
+		
 	return 1;
 }
 
@@ -247,16 +254,17 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 		nValid=1,nValidUsername=1,nValidFilename=1,count=0; // Reset all values
 		
 		printf("\nEnter username: ");
-		fgets(user.username, STRING_SIZE, stdin);
+		scanf(" %s", user.username);
 		
 		printf("Enter password: ");
 		enterPass(user.password);
 		
 		printf("\nEnter file name: ");
-		fgets(filename, STRING_SIZE, stdin);
+		scanf(" %s", filename);
 		
-		while(fgets(line_buffer, MAX_LINE, common) != NULL && nValid==1){
+		while(!feof(common) && nValid==1){
 			count++;
+			fscanf(common, "%s", line_buffer);
 			if(count==1 && strcmp(user.username, line_buffer) == 0){ // check every username
 				nValidUsername=0;
 				nValid=0;
@@ -303,11 +311,10 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 			enterPass(temp_key);
 			
 			nContinue = 1;
-			fprintf(common, "%s", user.username);
-			fprintf(common, "%s\n", user.password);
-			fprintf(common, "%s", filename);
-			
-			strtok(filename, "\n");
+			fprintf(common, "%s ", user.username);
+			fprintf(common, "%s ", user.password);
+			fprintf(common, "%s ", filename);
+
 			user_file = fopen(filename, "w"); // create user file
 			fclose(user_file);
 		}
@@ -338,27 +345,32 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 	system("cls");
 	passwordKeeperArt();
 	
-	while(fgets(line_buffer, MAX_LINE, user_file) != NULL){
-		strtok(line_buffer, "\n");
-		count++;
-		decrypt_algo(line_buffer, key);
-		
-		if(count==1){
-			printf("\nAccount: "); // change bring to center.
-			printf("%s", line_buffer);
-		}
-		else if(count==2){
-			printf("\nUsername: "); // change bring to center.
-			printf("%s", line_buffer);
-		}
+	if(user_file != NULL){
+		while(fscanf(user_file, "%s", line_buffer)!= EOF){
 			
-		else if(count==3){
-			printf("\nPassword: "); // change bring to center.
-			printf("%s", line_buffer);
-			printf("\n\n");
-			count=0;
+			decrypt_algo(line_buffer, key);
+			
+			if(count==0){
+				printf("\nAccount: "); // change bring to center.
+				printf("%s", line_buffer);
+			}
+			else if(count==1){
+				printf("\nUsername: "); // change bring to center.
+				printf("%s", line_buffer);
+			}
+				
+			else if(count==2){
+				printf("\nPassword: "); // change bring to center.
+				printf("%s", line_buffer);
+				printf("\n");
+				count=-1;
+			}
+			count++;
 		}
 	}
+	else
+		printf("\nNo password has been created\n");
+		
 	printf("\nPress any key to continue...");
 	getch();
 	
@@ -377,16 +389,18 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	passwordKeeperArt();
 	
 	printf("\nEnter account name: ");
-	fgets(user.account_name, STRING_SIZE, stdin);
-
+	scanf("%s", user.account_name);
+	
 	printf("Enter username: ");
-	fgets(user.username, STRING_SIZE, stdin);
+	scanf("%s", user.username);
 
 	printf("Enter password: ");
 	enterPass(user.password);
 	
-	while(fgets(line_buffer, MAX_LINE, user_file) != NULL){
+	while(!feof(user_file)){
 		count++;
+		
+		fscanf(user_file, "%s", line_buffer);
 		decrypt_algo(line_buffer, key);
 		
 		if(count==1 && strcmp(user.account_name, line_buffer)==0)
@@ -398,9 +412,9 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	
 	if(unique_name){
 		encrypt(&user, key);
-		fprintf(user_file, "%s\n", user.account_name);
-		fprintf(user_file, "%s\n", user.username);
-		fprintf(user_file, "%s\n", user.password);
+		fprintf(user_file, "%s ", user.account_name);
+		fprintf(user_file, "%s ", user.username);
+		fprintf(user_file, "%s ", user.password);
 	}
 	else{
 		printf("\nAccount name already exists.\n\nPress any key to continue...");
@@ -422,16 +436,16 @@ void changePassword(char filename[STRING_SIZE], int key){
 	struct credentials user;
 	
 	printf("\nEnter account name: ");
-	fgets(user.account_name, STRING_SIZE, stdin);
-	strtok(user.account_name, "\n");
+	scanf("%s", user.account_name);
 	
 	printf("Enter password: ");
 	enterPass(user.password);
 	
-	while(fgets(line_buffer, MAX_LINE, user_file) != NULL && !valid_password){ //stop loop if user->password is valid
+	while(!feof(user_file) && !valid_password){ //stop loop if user->password is valid
 		line_number++;
 		count++;
-		line_buffer[strcspn(line_buffer,"\n")]=0;
+		
+		fscanf(user_file, "%s", line_buffer);
 		decrypt_algo(line_buffer, key);
 		
 		if(!valid_account_name && (count==1 && strcmp(user.account_name, line_buffer) == 0)) // check for username
@@ -452,16 +466,18 @@ void changePassword(char filename[STRING_SIZE], int key){
 		printf("\nInvalid account name/password\n\nPress any key to continue...");
 		getch();
 	}
-	else{ // replace file with changed password instead of old
+	else{ // replace file with changed password
 		encrypt_algo(new_password, key);
 		user_file = fopen(filename, "r");
 		temp = fopen("temp", "w");
-			while(fgets(line_buffer, MAX_LINE, user_file) != NULL){
+			while(!feof(user_file)){
+				fscanf(user_file, "%s", line_buffer);
 				count++;
+				
 				if(line_number==count)
-					fprintf(temp, "%s", new_password);
+					fprintf(temp, "%s ", new_password);
 				else
-					fprintf(temp, "%s", line_buffer);
+					fprintf(temp, "%s ", line_buffer);
 			}
 			fclose(user_file);
 			fclose(temp);
@@ -480,15 +496,17 @@ void deletePassword(char filename[STRING_SIZE], int key){
 	
 	system("cls");
 	passwordKeeperArt();
-	printf("\nEnter account name: ");
-	fgets(user.account_name, STRING_SIZE, stdin);
-	strtok(user.account_name, "\n");
 	
-	while(fgets(line_buffer, MAX_LINE, user_file) != NULL && !valid_account_name){
+	printf("\nEnter account name: ");
+	scanf("%s", user.account_name);
+	
+	while(!feof(user_file) && !valid_account_name){
 		line_number++;
 		count++;
-		line_buffer[strcspn(line_buffer,"\n")]=0;
+		
+		fscanf(user_file, "%s", line_buffer);
 		decrypt_algo(line_buffer, key);
+		
 		if(!valid_account_name && (count==1 && strcmp(user.account_name, line_buffer)==0)) // check for username
 			valid_account_name=1;
 		
@@ -504,8 +522,11 @@ void deletePassword(char filename[STRING_SIZE], int key){
 		user_file = fopen(filename, "r");
 		temp = fopen("temp", "w");
 
-		while(fgets(line_buffer, MAX_LINE, user_file) != NULL){
+		while(!feof(user_file)){
 				count++;
+				
+				fscanf(user_file, "%s", line_buffer);
+				
 				if(count < line_number || (line_number+2) < count) // delete account lines
 					fprintf(temp, "%s", line_buffer);
 				else;
@@ -535,16 +556,16 @@ void changePasswordKeeper(){ // add user number
 	
 	printf("\nEnter current password: ");
 	enterPass(user.password);
-	strncat(user.password, "\n", 1);
 	
-	while(fgets(line_buffer, MAX_LINE, common) != NULL && !valid_password){ //stop loop if user->password is valid
+	while(!feof(common) && !valid_password){ //stop loop if user->password is valid
 		line_number++;
 		count++;
+		
+		fscanf(common, "%s", line_buffer);
 		if(!valid_password && (count==2 && strcmp(user.password, line_buffer)==0)){ // check for username
 			valid_password=1;
 			printf("\nEnter new password: ");
 			enterPass(new_password);
-			strncat(new_password, "\n", 1);
 		}
 		if(count==3)
 			count=0;
@@ -560,12 +581,13 @@ void changePasswordKeeper(){ // add user number
 	else{ // replace file with changed password instead of old
 		common = fopen("common", "r");
 		temp = fopen("temp", "w");
-			while(fgets(line_buffer, MAX_LINE, common) != NULL){
+			while(!feof(common)){
 				count++;
+				fscanf(common, "%s", line_buffer);
 				if(line_number==count)
-					fprintf(temp, "%s", new_password);
+					fprintf(temp, "%s ", new_password);
 				else
-					fprintf(temp, "%s", line_buffer);
+					fprintf(temp, "%s ", line_buffer);
 			}
 			fclose(common);
 			fclose(temp);
