@@ -1,7 +1,5 @@
 /*
 TODO:
-(MAJOR) MAKE ENCRYPT PRINT INT INSTEAD THEN GET A CERNTAIN VALUE (IE 999?) NA MEANING NEW LINE NA SIYA (EG USER TO PASS)
-(MAJOR) Still assuming that user inputs key
 
 (MODIFY) if file is NULL
 (MODIFY) Functions in a different file
@@ -10,9 +8,7 @@ TODO:
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
 (FEATURE) valid username (no space or other special character)
 
-(BUG) encryption fix (Key does not change everyting) (if 1 char, won't work)
-(BUG) cant detect if unique if key is wrong
-(BUG) Multiple passwords not encrypting and displaying well (lumalagpas sa ascii)
+(BUG) Display not displaying all
 
 (FEATURE) Ascii art (Align to center)
 (FEATURE) Login to register
@@ -71,8 +67,12 @@ void enterPass(char passwrd[STRING_SIZE]){ // Make password print '*' instead of
 int keyGen(char temp_key[STRING_SIZE]){
 	int i, key=0;
 	
-	for(i=0; i<strlen(temp_key); i++){
-		key += temp_key[i];
+	if(!strlen(temp_key)) // if user enters no key, 22 is the default key given by the programmer
+		key = 22;
+	else{
+		for(i=0; i<strlen(temp_key); i++){
+		key += temp_key[i];	
+		}
 	}
 	
 	key %= 30; // limit size of key
