@@ -1,14 +1,15 @@
 /*
 TODO:
 
+(MAJOR) Check if all functions work
+
 (MODIFY) if file is NULL
 (MODIFY) Functions in a different file
+
 (BACKUP) Create regular input for password
 (FEATURE) encryption salt
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
 (FEATURE) valid username (no space or other special character)
-
-(BUG) Display not displaying all
 
 (FEATURE) Ascii art (Align to center)
 (FEATURE) Login to register
@@ -354,24 +355,25 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 		while(fscanf(user_file, "%d", &current_num) != EOF){
 			nums[i] = current_num;
 			i++;
-		if(first){
-			if(account){
-				printf("\nAccount: ");
-				account=0;
-				username=1;
-			}
-			else if(username){
-				printf("\nUsername: ");
-				username=0;
-				password=1;
-			}
-			else if(password){
-				printf("\nPassword: ");
-				password=0;
-				account=1;
-			}
 			
-			first=0;
+			if(first){
+				if(account){
+					printf("\nAccount: ");
+					account=0;
+					username=1;
+				}
+				else if(username){
+					printf("\nUsername: ");
+					username=0;
+					password=1;
+				}
+				else if(password){
+					printf("\nPassword: ");
+					password=0;
+					account=1;
+				}
+				
+				first=0;
 		}
 		
 		if(current_num == 1434){ // marker for end of specific credential line, refresh first
@@ -382,9 +384,11 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 			num_count=0;
 			}
 		else if(current_num == 14344){ // marker for end of account details, refresh first
+			decrypt_algo(nums, num_count, key);
 			printf("\n");
 			count=0;
 			first=1;
+			i=0;
 			num_count=0;
 			}
 		else
