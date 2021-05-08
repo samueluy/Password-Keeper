@@ -1,16 +1,12 @@
 /*
 TODO:
-
 (MAJOR) Check if all functions work
-
 (MODIFY) if file is NULL
 (MODIFY) Functions in a different file
-
 (BACKUP) Create regular input for password
 (FEATURE) encryption salt
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
 (FEATURE) valid username (no space or other special character)
-
 (FEATURE) Ascii art (Align to center)
 (FEATURE) Login to register
 (FEATURE) invalid input clear screen
@@ -78,8 +74,8 @@ int keyGen(char temp_key[STRING_SIZE]){
 	
 	key %= 30; // limit size of key
 	
-	if((key%5 == 1)) // mod 1 will not work with reset
-		key+=1;
+	if((key%5 == 1) || (key%5 == 0))// mod 1 and 0 will not work with reset
+		key+=2;
 		
 	return key;
 }
@@ -121,6 +117,7 @@ void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key){
     int count=nums_length+1; // get string length for subtract key count
     int reset = key % 5;
 	
+	printf("%d %d %d", count, reset, key);
     for(i=nums_length; i>=0; i--){
     	if(i == 0) // first character of string
         	nums[i] -= key;
