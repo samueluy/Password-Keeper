@@ -1,12 +1,15 @@
 /*
 TODO:
+(MAJOR) MAKE ENCRYPT PRINT INT INSTEAD THEN GET A CERNTAIN VALUE (IE 999?) NA MEANING NEW LINE NA SIYA (EG USER TO PASS)
+(MAJOR) Still assuming that user inputs key
+
 (MODIFY) if file is NULL
 (MODIFY) Functions in a different file
 (BACKUP) Create regular input for password
-
 (FEATURE) encryption salt
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
 (FEATURE) valid username (no space or other special character)
+
 (BUG) encryption fix (Key does not change everyting) (if 1 char, won't work)
 (BUG) cant detect if unique if key is wrong
 (BUG) Multiple passwords not encrypting and displaying well (lumalagpas sa ascii)
@@ -72,78 +75,75 @@ int keyGen(char temp_key[STRING_SIZE]){
 		key += temp_key[i];
 	}
 	
+	key %= 30; // limit size of key
+	
+	if((key%5 == 1)) // mod 1 will not work with reset
+		key+=1;
+		
 	return key;
 }
 
-void encrypt_algo(char input[STRING_SIZE], int key){ // for some reason, yung first lang nag iiba
+void encrypt_algo(char input[STRING_SIZE], int nums[STRING_SIZE], int key){
 	
     int i;
     int temp=0;
     int count=0;
-    char temp_text[STRING_SIZE];
-    int reset = key % 10;
+    int reset = key % 5;
     
-    strcpy(temp_text, input);
     
-    for(i=0; i<strlen(temp_text); i++){
-    	count++;
+    for(i=0; i<strlen(input); i++) // get ascii values of user string input.
+    	nums[i] = (int) input[i];
+    
+    for(i=0; i<strlen(input); i++){ // encrypt
         if(i==0){ // first character add key
-        	temp_text[i] += key;
-            temp=temp_text[i];
+        	nums[i] += key;
+            temp=nums[i];
         }
         else if(count == reset){
-        	temp_text[i] += key;
-            temp=temp_text[i];
+        	nums[i] += key;
+            temp=nums[i];
             count=0;
         }
         
         else{
-            temp_text[i] += temp;
-            temp=temp_text[i];
-        }	
+            nums[i] += temp;
+            temp=nums[i];
+        }
+        
+        count++;
     }
-    strcpy(input, temp_text);
 }
 
-void decrypt_algo(char input[STRING_SIZE], int key){
+void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key){
 	
     int i;
-    int count=strlen(input); // get string length for subtract key count
-    char temp_text[STRING_SIZE];
-    int reset = key % 10;
-    
-    strcpy(temp_text, input);
-    
-    for(i=strlen(temp_text)-1; i>=0; i--){
+    int count=nums_length+1; // get string length for subtract key count
+    int reset = key % 5;
+	
+    for(i=nums_length; i>=0; i--){
     	if(i == 0) // first character of string
-        	temp_text[i] -= key;
+        	nums[i] -= key;
         
-        else if(count % reset == 0){
-        	temp_text[i] -= key;
-        	
-		}
+        else if((count%reset) == 1)
+        	nums[i] -= key;
         else
-        	temp_text[i] -= temp_text[i-1];
-        
-        count--;
+        	nums[i] -= nums[i-1];
+    	
+    	count--;
 	}
-
-    strcpy(input, temp_text);
+	
+	
+	for(i=0; i<nums_length; i++)
+		printf("%c", nums[i]);
 }
 
-void encrypt(struct credentials *user, int key){
+void encrypt(struct credentials *user, int nums[STRING_SIZE], int key){
 
-    encrypt_algo(user->account_name, key); // add struct to algo
-    encrypt_algo(user->password, key);
-    encrypt_algo(user->username, key);
+    encrypt_algo(user->account_name, nums, key); // add struct to algo
+    encrypt_algo(user->password, nums,  key);
+    encrypt_algo(user->username, nums, key);
 }
 
-void decrypt(struct credentials user, int key){
-
-    decrypt_algo(user.account_name, key); // add struct to algo
-    decrypt_algo(user.password, key);
-    decrypt_algo(user.username, key);
-}
 void passwordKeeperArt(){
 	printf("  ____                                     _\n |  _ \\ __ _ ___ _____      _____  _ __ __| |\n | |_) / _` / __/ __\\ \\ /\\ / / _ \\| '__/ _` |\n");
 	printf(" |  __/ (_| \\__ \\__ \\\\ V  V / (_) | | | (_| |\n |_| __\\__,_|___/___/ \\_/\\_/ \\___/|_|  \\__,_|\n\n | |/ /___  ___ _ __   ___ _ __              \n");
@@ -339,33 +339,57 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 	FILE *user_file;
 	user_file = fopen(filename, "r");
 	
-	int count=0;
-	char line_buffer[STRING_SIZE];
+	int i=0;
+	int num_count=0, count=0, first=1;
+	int current_num;
+	int nums[STRING_SIZE];
+	int account=1, username=0, password=0;
 	
 	system("cls");
 	passwordKeeperArt();
 	
+	// add decrypt algorithm
+	
 	if(user_file != NULL){
-		while(fscanf(user_file, "%s", line_buffer)!= EOF){
+		while(fscanf(user_file, "%d", &current_num) != EOF){
+			nums[i] = current_num;
+			i++;
+		if(first){
+			if(account){
+				printf("\nAccount: ");
+				account=0;
+				username=1;
+			}
+			else if(username){
+				printf("\nUsername: ");
+				username=0;
+				password=1;
+			}
+			else if(password){
+				printf("\nPassword: ");
+				password=0;
+				account=1;
+			}
 			
-			decrypt_algo(line_buffer, key);
-			
-			if(count==0){
-				printf("\nAccount: "); // change bring to center.
-				printf("%s", line_buffer);
-			}
-			else if(count==1){
-				printf("\nUsername: "); // change bring to center.
-				printf("%s", line_buffer);
-			}
-				
-			else if(count==2){
-				printf("\nPassword: "); // change bring to center.
-				printf("%s", line_buffer);
-				printf("\n");
-				count=-1;
-			}
+			first=0;
+		}
+		
+		if(current_num == 1434){ // marker for end of specific credential line, refresh first
 			count++;
+			first=1;
+			decrypt_algo(nums, num_count, key);
+			i=0;
+			num_count=0;
+			}
+		else if(current_num == 14344){ // marker for end of account details, refresh first
+			printf("\n");
+			count=0;
+			first=1;
+			num_count=0;
+			}
+		else
+		//	printf("%c", current_num);
+			num_count++;
 		}
 	}
 	else
@@ -381,9 +405,11 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	FILE *user_file;
 	user_file = fopen(filename, "a+");
 	
+	int i;
 	int unique_name=1, count=0;
-	char line_buffer[STRING_SIZE];
+	int nums[STRING_SIZE];
 	struct credentials user;
+	int current_num;
 	
 	system("cls");
 	passwordKeeperArt();
@@ -400,21 +426,35 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	while(!feof(user_file)){
 		count++;
 		
-		fscanf(user_file, "%s", line_buffer);
-		decrypt_algo(line_buffer, key);
+		fscanf(user_file, "%d", &current_num);
+/*		decrypt_algo(line_buffer, key);
 		
 		if(count==1 && strcmp(user.account_name, line_buffer)==0)
 			unique_name=0;
 		
 		if(count==3)
 			count=0;
+*/
 	}
 	
 	if(unique_name){
-		encrypt(&user, key);
-		fprintf(user_file, "%s ", user.account_name);
-		fprintf(user_file, "%s ", user.username);
-		fprintf(user_file, "%s ", user.password);
+		encrypt_algo(user.account_name, nums, key);
+		for(i=0; i<strlen(user.account_name); i++)
+			fprintf(user_file, "%d ", nums[i]);
+		
+		fprintf(user_file, "%d ", 1434);
+		
+		encrypt_algo(user.username, nums, key);
+		for(i=0; i<strlen(user.username); i++)
+			fprintf(user_file, "%d ", nums[i]);
+		
+		fprintf(user_file, "%d ", 1434);
+		
+		encrypt_algo(user.password, nums, key);
+		for(i=0; i<strlen(user.password); i++)
+			fprintf(user_file, "%d ", nums[i]);
+		
+		fprintf(user_file, "%d ", 14344);
 	}
 	else{
 		printf("\nAccount name already exists.\n\nPress any key to continue...");
@@ -446,7 +486,7 @@ void changePassword(char filename[STRING_SIZE], int key){
 		count++;
 		
 		fscanf(user_file, "%s", line_buffer);
-		decrypt_algo(line_buffer, key);
+		//decrypt_algo(line_buffer, key);
 		
 		if(!valid_account_name && (count==1 && strcmp(user.account_name, line_buffer) == 0)) // check for username
 			valid_account_name=1;
@@ -467,7 +507,7 @@ void changePassword(char filename[STRING_SIZE], int key){
 		getch();
 	}
 	else{ // replace file with changed password
-		encrypt_algo(new_password, key);
+	//	encrypt_algo(new_password, key);
 		user_file = fopen(filename, "r");
 		temp = fopen("temp", "w");
 			while(!feof(user_file)){
@@ -505,7 +545,7 @@ void deletePassword(char filename[STRING_SIZE], int key){
 		count++;
 		
 		fscanf(user_file, "%s", line_buffer);
-		decrypt_algo(line_buffer, key);
+		//decrypt_algo(line_buffer, key);
 		
 		if(!valid_account_name && (count==1 && strcmp(user.account_name, line_buffer)==0)) // check for username
 			valid_account_name=1;
