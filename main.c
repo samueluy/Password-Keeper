@@ -1,9 +1,15 @@
 /*
 TODO:
 (MAJOR) Check if all functions work
+(MAJOR) WALL
+
 (MODIFY) if file is NULL
 (MODIFY) Functions in a different file
+
 (BACKUP) Create regular input for password
+
+(BUG) If may space
+
 (FEATURE) encryption salt
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
 (FEATURE) valid username (no space or other special character)
@@ -16,7 +22,6 @@ TODO:
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
-
 
 #define STRING_SIZE 256
 #define MAX_LINE 256
@@ -111,13 +116,31 @@ void encrypt_algo(char input[STRING_SIZE], int nums[STRING_SIZE], int key){
     }
 }
 
+void store_credentials(char input[STRING_SIZE], char filename[STRING_SIZE], int nums[STRING_SIZE], int key, int which){ // which | 0 = nothing, 1 = 1434, 2 = 14344
+	FILE *user_file;
+	user_file = fopen(filename, "a+");
+	
+	int i;
+	
+	encrypt_algo(input, nums, key);
+	for(i=0; i<strlen(input); i++)
+		fprintf(user_file, "%d ", nums[i]);
+	
+	if(which==1)
+		fprintf(user_file, "%d ", 1434);
+	else if(which==2)
+		fprintf(user_file, "%d ", 14344);
+	else;
+	
+	fclose(user_file);
+}
+
 void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key){
 	
     int i;
     int count=nums_length+1; // get string length for subtract key count
     int reset = key % 5;
 	
-	printf("%d %d %d", count, reset, key);
     for(i=nums_length; i>=0; i--){
     	if(i == 0) // first character of string
         	nums[i] -= key;
@@ -135,11 +158,54 @@ void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key){
 		printf("%c", nums[i]);
 }
 
-void encrypt(struct credentials *user, int nums[STRING_SIZE], int key){
-
-    encrypt_algo(user->account_name, nums, key); // add struct to algo
-    encrypt_algo(user->password, nums,  key);
-    encrypt_algo(user->username, nums, key);
+int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int which, int key, int *line_count){ // which | 0 = account name, 1 = username = 2 = password
+	FILE *user_file;
+	user_file = fopen(filename, "r");
+	
+	int nums[STRING_SIZE];
+	int same=0; // if similar, return this
+	int current_num;
+	int similar=0, detail_count=0;
+	int i=0;
+	
+	line_count = 0;
+	
+	encrypt_algo(input, nums, key); // get the values of encrypted input
+	
+	if(user_file != NULL){
+		while(fscanf(user_file, "%d", &current_num) != EOF){
+			if(!same){
+				if((nums[i] == current_num) && (detail_count==which)) // check if similar
+					similar++;
+					
+				else if(similar == strlen(input))  // check if similar == length of input, if so, then return 1
+					return same=1;
+					
+				else if(current_num == 14344){ // reset detail_count when it reaches new set of account details
+					line_count++;
+					detail_count=0;
+					similar=0;
+					i=-1;
+				}
+				else if(current_num == 1434){
+					line_count++;
+					detail_count++;
+					similar=0;
+					i=-1;
+				}
+				else
+					similar=0;
+					
+				i++;
+			}
+		}
+		return 0; // not similar
+	}
+	else{
+		printf("Invalid user file. Please contact administrator.\nPress any key to continue...");
+		getch();
+	}	
+	return 0; // failed
 }
 
 void passwordKeeperArt(){
@@ -346,8 +412,6 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 	system("cls");
 	passwordKeeperArt();
 	
-	// add decrypt algorithm
-	
 	if(user_file != NULL){
 		while(fscanf(user_file, "%d", &current_num) != EOF){
 			nums[i] = current_num;
@@ -371,7 +435,7 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 				}
 				
 				first=0;
-		}
+			}
 		
 		if(current_num == 1434){ // marker for end of specific credential line, refresh first
 			count++;
@@ -389,10 +453,10 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 			num_count=0;
 			}
 		else
-		//	printf("%c", current_num);
 			num_count++;
 		}
 	}
+	
 	else
 		printf("\nNo password has been created\n");
 		
@@ -407,7 +471,7 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	user_file = fopen(filename, "a+");
 	
 	int i;
-	int unique_name=1, count=0;
+	int unique_name=0, count=0;
 	int nums[STRING_SIZE];
 	struct credentials user;
 	int current_num;
@@ -424,38 +488,12 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 	printf("Enter password: ");
 	enterPass(user.password);
 	
-	while(!feof(user_file)){
-		count++;
-		
-		fscanf(user_file, "%d", &current_num);
-/*		decrypt_algo(line_buffer, key);
-		
-		if(count==1 && strcmp(user.account_name, line_buffer)==0)
-			unique_name=0;
-		
-		if(count==3)
-			count=0;
-*/
-	}
+	unique_name = check_same(user.account_name, filename, 0, key, 0);
 	
-	if(unique_name){
-		encrypt_algo(user.account_name, nums, key);
-		for(i=0; i<strlen(user.account_name); i++)
-			fprintf(user_file, "%d ", nums[i]);
-		
-		fprintf(user_file, "%d ", 1434);
-		
-		encrypt_algo(user.username, nums, key);
-		for(i=0; i<strlen(user.username); i++)
-			fprintf(user_file, "%d ", nums[i]);
-		
-		fprintf(user_file, "%d ", 1434);
-		
-		encrypt_algo(user.password, nums, key);
-		for(i=0; i<strlen(user.password); i++)
-			fprintf(user_file, "%d ", nums[i]);
-		
-		fprintf(user_file, "%d ", 14344);
+	if(!unique_name){
+		store_credentials(user.account_name, filename, nums, key, 1);
+		store_credentials(user.username, filename, nums, key, 1);
+		store_credentials(user.password, filename, nums, key, 2);
 	}
 	else{
 		printf("\nAccount name already exists.\n\nPress any key to continue...");
@@ -467,14 +505,17 @@ void addPassword(char filename[STRING_SIZE], int key){ // check if unique applic
 
 void changePassword(char filename[STRING_SIZE], int key){
 	FILE *user_file, *temp;
-	user_file = fopen(filename, "r");
 	
 	system("cls");
 	passwordKeeperArt();
 	
-	int valid_account_name=0, valid_password=0, line_number=0, count=0;
-	char new_password[STRING_SIZE], line_buffer[STRING_SIZE];
+	int i;
+	int valid_account_name=0, valid_password=0;
+	int nums[STRING_SIZE];
+	char new_password[STRING_SIZE];
 	struct credentials user;
+	int current_number;
+	int count=0, pass_line_count;
 	
 	printf("\nEnter account name: ");
 	scanf("%s", user.account_name);
@@ -482,48 +523,42 @@ void changePassword(char filename[STRING_SIZE], int key){
 	printf("Enter password: ");
 	enterPass(user.password);
 	
-	while(!feof(user_file) && !valid_password){ //stop loop if user->password is valid
-		line_number++;
-		count++;
-		
-		fscanf(user_file, "%s", line_buffer);
-		//decrypt_algo(line_buffer, key);
-		
-		if(!valid_account_name && (count==1 && strcmp(user.account_name, line_buffer) == 0)) // check for username
-			valid_account_name=1;
-		
-		if(valid_account_name && (count==3 && strcmp(user.password, line_buffer) == 0)){ // check for password below username
-			valid_password=1;
-			printf("\nEnter new password: ");
-			enterPass(new_password);
-		}
-		if(count==3)
-			count=0;
-	}
-	fclose(user_file);
+	valid_account_name = check_same(user.account_name, filename, 0, key, 0);
+	if(valid_account_name)
+		valid_password = check_same(user.password, filename, 2, key, &pass_line_count);
 	
-	count=0;
 	if(!valid_account_name || !valid_password){
 		printf("\nInvalid account name/password\n\nPress any key to continue...");
 		getch();
 	}
 	else{ // replace file with changed password
-	//	encrypt_algo(new_password, key);
+		printf("Enter new password: ");
+		enterPass(new_password);
+
 		user_file = fopen(filename, "r");
 		temp = fopen("temp", "w");
-			while(!feof(user_file)){
-				fscanf(user_file, "%s", line_buffer);
-				count++;
+			while(fscanf(user_file, "%d", &current_number) != EOF){
 				
-				if(line_number==count)
-					fprintf(temp, "%s ", new_password);
+				if(current_number == 1434 || current_number == 14344)
+					count++;
+					
+				if(pass_line_count==count){
+					encrypt_algo(new_password, nums, key);
+					for(i=0; i<strlen(new_password);i++)
+						fprintf(temp, "%d ", nums[i]);
+					count++;
+				}
 				else
-					fprintf(temp, "%s ", line_buffer);
+					fprintf(temp, "%d ", current_number);
 			}
+			
 			fclose(user_file);
 			fclose(temp);
 			remove(filename);
 			rename("temp", filename);
+			
+			printf("Password successfuly changed!\n\nPress any key to continue...");
+			getch();
 	}
 }
 
