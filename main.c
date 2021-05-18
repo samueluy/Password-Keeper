@@ -9,13 +9,14 @@ TODO:
 (BACKUP) Create regular input for password (scanf)
 
 (BUG) If may space
+(BUG) remove and rename filename not working
+(BUG) Common file username in use kahit filename naman
+(BUG) Fix login common
 
 (FEATURE) encryption salt
 (FEATURE) common file encryption (will change file name as well) (maybe make it hidden?)
 (FEATURE) valid username (no space or other special character)
 (FEATURE) Ascii art (Align to center)
-(FEATURE) Login to register
-(FEATURE) invalid input clear screen
 */
 
 #include <stdio.h>
@@ -25,6 +26,7 @@ TODO:
 
 #define STRING_SIZE 256
 #define MAX_LINE 256
+#define MAIN_KEY 214 // programmer defined key for common file
 
 struct credentials{ // CHANGE THIS MABOI
 	char account_name[STRING_SIZE];
@@ -158,7 +160,7 @@ void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key){
 		printf("%c", nums[i]);
 }
 
-int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int line_number, int key, int *line_count){ // which | 0 = account name, 1 = username = 2 = password
+int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int line_number, int key, int *line_count){ // which | 0 = account name, 1 = username = 2 = password/filename
 	FILE *user_file;
 	user_file = fopen(filename, "r");
 	
@@ -176,13 +178,13 @@ int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int line_num
 			
 			if(current_num == 1434){
 				*line_count += 1;
-				for(y=0; y<length; y++){
+				for(y=0; y<strlen(input); y++){ // strlen(input)
 					if(nums[y] == temp[y])
 						same_count++;
 					else
-						y=length; // exit loop
+						y=strlen(input); // exit loop
 				}
-				if(same_count == length)
+				if(same_count == strlen(input))
 					return 1;
 					
 				i=-1;
@@ -191,13 +193,13 @@ int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int line_num
 			}
 			else if(current_num == 14344){
 				*line_count += 1;
-				for(y=0; y<length; y++){
+				for(y=0; y<strlen(input); y++){ // strlen(input)
 					if(nums[y] == temp[y])
 						same_count++;
 					else
-						y=length; // exit loop
+						y=strlen(input); // exit loop
 				}
-				if(same_count == length)
+				if(same_count == strlen(input))
 					return 1;
 	
 				i=-1;
@@ -232,53 +234,51 @@ int welcomeScreen(){
 	return validInput(2);
 }
 
-int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main menu, make key do something
+int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 	FILE *common;
 	
-	int nSelect=0, nValidUser=0, nValid=0, count=0, flag=0, nContinue=0;
-	char line_buffer[STRING_SIZE];
+	int nSelect=0, username_line_count=0, nValid=0, line_count=0, flag=0, nContinue=0, valid_username=0;
+	int current_number, i=0, count=0, same_count=0;
+	int encrypted_password[STRING_SIZE], saved_pass[STRING_SIZE];
 	struct credentials user;
 	
 	system("cls");
 	passwordKeeperArt();
 	while(!nContinue){
 		common = fopen("common", "r");
-		nValidUser=0,nValid=0,count=0,flag=0; // reset all values
+		valid_username=0,nValid=0,line_count=0, count=0, same_count=0,flag=0, i=0, username_line_count=0; // reset all values
 		
 		printf("\nEnter username: ");
 		scanf("%s", user.username);
-	//	fgets(user.username, STRING_SIZE, stdin);
 		
 		printf("Enter password: ");
 		enterPass(user.password);
+		encrypt_algo(user.password, encrypted_password, MAIN_KEY);
 		
 		if(common != NULL){
-			while(!feof(common) && !flag){
-			count++;
-			fscanf(common, "%s", line_buffer);
-			if(count==1 && strcmp(user.username, line_buffer) == 0) // check every username
-				nValidUser=1;
-				
-			if(count==2 && nValidUser){ // check password if username is valid
-				if(strcmp(user.password, line_buffer) == 0)
+			valid_username = check_same(user.username, "common", 0, MAIN_KEY, &username_line_count);
+			printf("%d", username_line_count);
+			if(valid_username){
+				while(fscanf(common, "%d", &current_number) != EOF){
+					if(current_number == 1434 || current_number == 14344)
+						line_count++;
+
+				if(username_line_count == line_count){ // Password of inputted account name
+					saved_pass[i] = current_number;
+					i++;
+				}
+			}
+			for(i=0; i<strlen(user.password); i++){ // skip 1434
+				if(encrypted_password[i] == saved_pass[i+1])
+					same_count++;
+				if(same_count == strlen(user.password)) // valid account credentials
 					nValid=1;
-				else
-					flag=1; // exit loop if username does not match password
 			}
-			
-			if(nValid && count==3){ // copy line_buffer to filename to use in main
-				strcpy(filename, line_buffer);
-				flag=1;
-			}
-			if(count==3) // reset count -> move to next user
-				count=0;
-			}
-			
+		}
 			if(!nValid){
 				system("cls");
 				passwordKeeperArt();
 				printf("\nUsername/Password not found.\n[1] Try again?\n[2] Back\n[3] Exit\n");
-				
 				nSelect = validInput(3);
 				if(nSelect == 1){
 					system("cls");
@@ -297,9 +297,8 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 				printf("\nEnter key: ");
 				enterPass(temp_key);
 				nContinue=1;
-			}
-			
-		fclose(common);
+				fclose(common);	
+			}		
 		}
 		else{
 			printf("\nNo account in the database. Please create an account.\n\nPress any key to continue...");
@@ -307,23 +306,22 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // goto main 
 			return 2;
 		}
 	}
-		
 	return 1;
 }
 
 int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO: create key
 	FILE *common, *user_file;
 	
-	int nSelect=0, nValid=1, nValidUsername=1, nValidFilename=1, count=0, nContinue=0;
+	int nSelect=0, nValid=1, taken_username=0, taken_filename=0, count=0, nContinue=0;
+	int nums[STRING_SIZE], line_count;
 	char line_buffer[STRING_SIZE];
 	struct credentials user;
 	
-	system("cls");
-	passwordKeeperArt();
-	
 	while(!nContinue){
+		system("cls");
+		passwordKeeperArt();
 		common = fopen("common", "a+");
-		nValid=1,nValidUsername=1,nValidFilename=1,count=0; // Reset all values
+		nValid=1,taken_username=1, taken_filename=1,count=0; // Reset all values
 		
 		printf("\nEnter username: ");
 		scanf(" %s", user.username);
@@ -332,27 +330,15 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 		enterPass(user.password);
 		
 		printf("\nEnter file name: ");
-		scanf(" %s", filename);
+		scanf("%s", filename);
 		
-		while(!feof(common) && nValid==1){
-			count++;
-			fscanf(common, "%s", line_buffer);
-			if(count==1 && strcmp(user.username, line_buffer) == 0){ // check every username
-				nValidUsername=0;
-				nValid=0;
-			}
-			
-			if(count==3 && strcmp(filename, line_buffer) == 0){ // check every filename
-				nValidFilename=0;
-				nValid=0;
-			}
-			
-			if(count == 3) // reset count to 0
-				count = 0;
-		}
+		taken_username = check_same(user.username, "common", 0, MAIN_KEY, &line_count);
+		taken_filename = check_same(filename, "common", 2, MAIN_KEY, &line_count);
 		
-		if(!nValidFilename){
-			printf("Filename is already in use.\n[1] Try again?\n[2] Back\n[3] Exit\n");
+		if(taken_username){
+			system("cls");
+			passwordKeeperArt();
+			printf("Username is already in use.\n[1] Try again?\n[2] Back\n[3] Exit\n");
 			nSelect = validInput(3);
 				if(nSelect == 1);
 				else if(nSelect == 2){
@@ -364,8 +350,10 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 					return 3;
 				}
 		}
-		else if(!nValidUsername){
-			printf("Username is already in use.\n[1] Try again?\n[2] Back\n[3] Exit\n");
+		else if(taken_filename){
+			system("cls");
+			passwordKeeperArt();
+			printf("Filename is already in use.\n[1] Try again?\n[2] Back\n[3] Exit\n");
 			nSelect = validInput(3);
 				if(nSelect == 1);
 				else if(nSelect == 2){
@@ -383,9 +371,9 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){ // TODO:
 			enterPass(temp_key);
 			
 			nContinue = 1;
-			fprintf(common, "%s ", user.username);
-			fprintf(common, "%s ", user.password);
-			fprintf(common, "%s ", filename);
+			store_credentials(user.username, "common", nums, MAIN_KEY, 1);
+			store_credentials(user.password, "common", nums, MAIN_KEY, 1);
+			store_credentials(filename, "common", nums, MAIN_KEY, 2);
 
 			user_file = fopen(filename, "w"); // create user file
 			fclose(user_file);
@@ -523,7 +511,6 @@ void changePassword(char filename[STRING_SIZE], int key){
 	int current_number;
 	int account_line_count, line_count=0, done=0;
 	int i;
-	int length;
 	
 	printf("\nEnter account name: ");
 	scanf("%s", user.account_name);
@@ -540,13 +527,18 @@ void changePassword(char filename[STRING_SIZE], int key){
 		encrypt_algo(new_password, nums, key);
 		
 		user_file = fopen(filename, "r");
+
 		temp = fopen("temp", "a+");
+		if(user_file == NULL){
+			printf("User file not found. Please contact administrator\n\nPress any key to continue...");
+			getch();
+		}
+		else{
 			while(fscanf(user_file, "%d", &current_number) != EOF){
 				if(!done){
 					if(current_number == 1434 || current_number == 14344)
 						line_count++;
 				}
-				//FIX DONT PRINT YUNG LATEST PASSWORD AFTER PRINTING THIS - check yung sa count ng array ng pass
 				if(account_line_count+1 == line_count){ // Password of inputted account name
 					if(!done){
 						fprintf(temp, "%d ", 1434);
@@ -559,11 +551,12 @@ void changePassword(char filename[STRING_SIZE], int key){
 				}	
 				else
 					fprintf(temp, "%d ", current_number);
-			}
+			}		
+		}
+				
 		fclose(user_file);
 		fclose(temp);
-		length = strlen(filename);
-		remove(filename);
+		remove(filename); // NOT WORKING
 		remove("temp");
 			
 		printf("\n\nPassword successfuly changed!\n\nPress any key to continue...");
@@ -575,9 +568,10 @@ void deletePassword(char filename[STRING_SIZE], int key){
 	FILE *user_file, *temp;
 	user_file = fopen(filename, "r");
 	
-	int valid_account_name=0, count=0, line_number=0;
-	char line_buffer[STRING_SIZE];
+	int valid_account_name=0, deleted=0, line_count=0;
+	int current_number, account_line_count=0;
 	struct credentials user;
+	char file[STRING_SIZE];
 	
 	system("cls");
 	passwordKeeperArt();
@@ -585,47 +579,43 @@ void deletePassword(char filename[STRING_SIZE], int key){
 	printf("\nEnter account name: ");
 	scanf("%s", user.account_name);
 	
-	while(!feof(user_file) && !valid_account_name){
-		line_number++;
-		count++;
-		
-		fscanf(user_file, "%s", line_buffer);
-		//decrypt_algo(line_buffer, key);
-		
-		if(!valid_account_name && (count==1 && strcmp(user.account_name, line_buffer)==0)) // check for username
-			valid_account_name=1;
-		
-		if(count==3)
-			count=0;
-	}
-	fclose(user_file);
+	valid_account_name = check_same(user.account_name, filename, 0, key, &account_line_count);
 	
-	count=0; // reset count
-	if(!valid_account_name)
-		printf("Invalid account name\n");
+	if(!valid_account_name){
+		printf("Invalid account name\n\nPress any key to continue...");
+		getch();
+	}
 	else{
 		user_file = fopen(filename, "r");
 		temp = fopen("temp", "w");
-
-		while(!feof(user_file)){
-				count++;
+		while(fscanf(user_file, "%d", &current_number) != EOF){
+				if(current_number == 1434 || current_number == 14344)
+					line_count++;
 				
-				fscanf(user_file, "%s", line_buffer);
-				
-				if(count < line_number || (line_number+2) < count) // delete account lines
-					fprintf(temp, "%s", line_buffer);
-				else;
+				if(account_line_count-1 == line_count);
+				else if(deleted){
+					deleted=0;
+					line_count++;
+					fprintf(temp, "%d ", current_number);
+				}
+				else if(account_line_count == line_count); // Password of inputted account name
+				else if(account_line_count+1 == line_count);
+				else if(account_line_count+2 == line_count){
+					deleted=1;
+					if(account_line_count != 1)
+						fprintf(temp, "%d ", 14344);
+				}
+				else
+					fprintf(temp, "%d ", current_number);
 		}
-		
 		fclose(user_file);
 		fclose(temp);
-		remove(filename);
-		rename("temp", filename);
+		//rename
 		
 		printf("\"%s\" has been deleted\n\nPress any key to continue...", user.account_name);
 		getch();
-		
 	}
+		
 }
 
 void changePasswordKeeper(){ // add user number
@@ -741,8 +731,6 @@ int main(void){
 	}
 	
 	endScreen();
-	
 //	fclose(common);
-
 	return 0;
 }
