@@ -1,18 +1,11 @@
 /*
 TODO:
-(MAJOR) Check if all functions work
-
 (MODIFY) if file is NULL
-(MODIFY) Functions in a different file
 
 (BACKUP) Create regular input for password (scanf)
 
-(BUG) If may space
-(BUG) Fix login blank password
-(BUG) Filename accepting kahit sobra
+(BUG) Filename found sa new account
 
-(FEATURE) encryption salt
-(FEATURE) valid username (no space or other special character)
 (FEATURE) Ascii art (Align to center)
 */
 
