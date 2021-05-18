@@ -8,7 +8,7 @@ struct credentials{
 	char password[STRING_SIZE];
 };
 
-int validInput(int nMaxInput){
+int validInput(int nMaxInput){ // NOT SURE IF PWEDE SINCE USING FGETS
 	int nInput=0, nValid=0;
 	
 	printf("Enter: ");
@@ -28,6 +28,29 @@ int validInput(int nMaxInput){
 	}
 	
 	return nInput;
+}
+
+void enterUsername(char input[STRING_SIZE]){
+	int i, space=0, done=0;
+	char username[STRING_SIZE];
+	
+	while(!done){
+		fgets(username, STRING_SIZE, stdin);
+	
+		for(i=0; i<strlen(username) && !space; i++){
+			if(username[i] == ' ')
+				space=1;
+		}
+		if(space){
+			printf("Username may not have <space>\n\nPress any key to try again...");
+			getch();
+		}
+		else{
+			username[strlen(username)-1] = '\0';	
+			strcpy(input, username);
+			done=1;
+		}
+	}
 }
 
 void enterPass(char passwrd[STRING_SIZE]){
@@ -62,10 +85,10 @@ int keyGen(char temp_key[STRING_SIZE]){
 }
 
 void encrypt_algo(char input[STRING_SIZE], int nums[STRING_SIZE], int key){	
-    int i;
-    int temp=0;
-    int count=0;
+    int i, temp=0, count=0;
     int reset = key % 5;
+    
+    key += strlen(input); // salt
     
     for(i=0; i<strlen(input); i++) // get ascii values of user string input.
     	nums[i] = (int) input[i];
@@ -113,6 +136,7 @@ void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key, char decrypte
     int count=nums_length+1; // get string length for subtract key count
     int reset = key % 5;
 	
+	key += nums_length; // SALT
     for(i=nums_length; i>=0; i--){
     	if(i == 0) // first character of string
         	nums[i] -= key;
@@ -135,11 +159,8 @@ int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int key, int
 	FILE *user_file;
 	user_file = fopen(filename, "r");
 	
+	int current_num, length=0, same_count=0, i, y;
 	int nums[STRING_SIZE], temp[STRING_SIZE];
-	int current_num;
-	int i=0, y=0;
-	int length=0;
-	int same_count=0;
 	
 	encrypt_algo(input, nums, key); // get the values of encrypted input
 	
@@ -197,10 +218,8 @@ int welcomeScreen(){
 int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 	FILE *common;
 	
-	int nSelect=0, username_line_count=0, nValid=0, line_count=0, nContinue=0, valid_username=0;
-	int file_nums[STRING_SIZE];
-	int current_number, i=0, y=0;
-	int encrypted_password[STRING_SIZE], saved_pass[STRING_SIZE];
+	int nSelect, current_number, line_count, username_line_count, valid_username, nValid, nContinue=0, i, y;
+	int file_nums[STRING_SIZE], encrypted_password[STRING_SIZE], saved_pass[STRING_SIZE];;
 	char decrypted_password[STRING_SIZE], decrypted_filename[STRING_SIZE];
 	struct credentials user;
 	
@@ -276,9 +295,9 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 }
 
 int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
-	FILE *common, *user_file;
+	FILE *common;
 	
-	int nSelect=0, taken_username=0, taken_filename=0, nContinue=0;
+	int nSelect, taken_username, taken_filename, nContinue=0;
 	int line_count;
 	struct credentials user;
 	
@@ -289,6 +308,7 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 		taken_username=1, taken_filename=1; // Reset all values
 		
 		printf("\nEnter username: ");
+	//	enterUsername(user.username);
 		scanf(" %s", user.username);
 		
 		printf("Enter password: ");
@@ -308,12 +328,10 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 			
 			if(nSelect == 1);
 			else if(nSelect == 2){
-				fclose(user_file);
 				fclose(common);
 				return 2;
 			}
 			else{
-				fclose(user_file);
 				fclose(common);
 				return 3;
 			}
@@ -326,12 +344,10 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 			
 			if(nSelect == 1);
 			else if(nSelect == 2){
-				fclose(user_file);
 				fclose(common);
 				return 2;
 			}
 			else{
-				fclose(user_file);
 				fclose(common);
 				return 3;
 			}
@@ -344,12 +360,9 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 			store_credentials(user.username, "common", MAIN_KEY, 1);
 			store_credentials(user.password, "common", MAIN_KEY, 1);
 			store_credentials(filename, "common", MAIN_KEY, 2);
-
-			user_file = fopen(filename, "w"); // create user file
 		}
 	}
 	
-	fclose(user_file);
 	fclose(common);
 	return 1;
 }
@@ -367,11 +380,8 @@ void displayCredentials(char filename[STRING_SIZE], int key){
 	FILE *user_file;
 	user_file = fopen(filename, "r");
 	
-	int i=0;
-	int num_count=0, count=0, first=1;
-	int current_num;
+	int current_num, account=1, username=0, password=0, num_count=0, count=0, first=1, i;
 	int nums[STRING_SIZE];
-	int account=1, username=0, password=0;
 	char decrypted[STRING_SIZE];
 	
 	system("cls");
@@ -436,8 +446,7 @@ void addPassword(char filename[STRING_SIZE], int key){
 	FILE *user_file;
 	user_file = fopen(filename, "a+");
 	
-	int unique_name=0;
-	int user_line;
+	int user_line, unique_name=0;
 	struct credentials user;
 	
 	system("cls");
@@ -473,13 +482,10 @@ void changePassword(char filename[STRING_SIZE], int key , int which){
 	system("cls");
 	passwordKeeperArt();
 	
-	int valid_account_name=0;
+	int current_number, new_password_length=0, account_line_count=0, line_count=0, done=0, valid_account_name=0, i;
 	int nums[STRING_SIZE];
 	char new_password[STRING_SIZE];
 	struct credentials user;
-	int current_number;
-	int account_line_count=0, line_count=0, done=0 ,i=0;
-	int new_password_length=0;
 	
 	printf("\nEnter account name: ");
 	scanf("%s", user.account_name);
@@ -536,8 +542,7 @@ void changePassword(char filename[STRING_SIZE], int key , int which){
 void deletePassword(char filename[STRING_SIZE], int key){
 	FILE *user_file, *temp;
 	
-	int valid_account_name=0, deleted=0, line_count=0;
-	int current_number, account_line_count=0;
+	int current_number, account_line_count=0, valid_account_name=0, deleted=0, line_count=0;
 	struct credentials user;
 	
 	system("cls");
