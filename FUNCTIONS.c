@@ -8,12 +8,11 @@ struct credentials{
 	char password[STRING_SIZE];
 };
 
-int validInput(int nMaxInput){ // NOT SURE IF PWEDE SINCE USING FGETS
+int validInput(int nMaxInput){
 	int nInput=0, nValid=0;
 	
 	printf("Enter: ");
 	nInput = getch() - '0';
-//	scanf("%d", &nInput);
 
 	while(!nValid){
 		if(nInput > 0 && nInput <= nMaxInput)
@@ -22,35 +21,10 @@ int validInput(int nMaxInput){ // NOT SURE IF PWEDE SINCE USING FGETS
 		printf("\nInvalid!\nPlease enter a valid input: ");
 		printf("Enter: ");
 		nInput = getch() - '0';
-	// using regular scanf
-	//	scanf("%d", &nInput);
 		}
 	}
 	
 	return nInput;
-}
-
-void enterUsername(char input[STRING_SIZE]){
-	int i, space=0, done=0;
-	char username[STRING_SIZE];
-	
-	while(!done){
-		fgets(username, STRING_SIZE, stdin);
-	
-		for(i=0; i<strlen(username) && !space; i++){
-			if(username[i] == ' ')
-				space=1;
-		}
-		if(space){
-			printf("Username may not have <space>\n\nPress any key to try again...");
-			getch();
-		}
-		else{
-			username[strlen(username)-1] = '\0';	
-			strcpy(input, username);
-			done=1;
-		}
-	}
 }
 
 void enterPass(char passwrd[STRING_SIZE]){
@@ -119,7 +93,8 @@ void store_credentials(char input[STRING_SIZE], char filename[STRING_SIZE], int 
 	int i;
 	int nums[STRING_SIZE];
 	
-	encrypt_algo(input, nums, key);
+	if(user_file != NULL){
+		encrypt_algo(input, nums, key);
 	for(i=0; i<strlen(input); i++)
 		fprintf(user_file, "%d ", nums[i]);
 	
@@ -129,6 +104,11 @@ void store_credentials(char input[STRING_SIZE], char filename[STRING_SIZE], int 
 		fprintf(user_file, "%d ", END_GROUP);
 	
 	fclose(user_file);
+	}
+	else{
+		printf("Error! Could not open file. Please contact administrator.\n\nPress any key to continue...");
+		getch();
+	}
 }
 
 void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key, char decrypted[STRING_SIZE]){
@@ -192,10 +172,8 @@ int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int key, int
 		fclose(user_file);
 		return 0;
 	}
-	else{
-		printf("Invalid user file. Please contact administrator.\nPress any key to continue...");
-		getch();
-	}
+	else
+		return -1;
 	fclose(user_file);
 	return -1; // failed
 }
@@ -308,7 +286,6 @@ int newAccount(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 		taken_username=1, taken_filename=1; // Reset all values
 		
 		printf("\nEnter username: ");
-	//	enterUsername(user.username);
 		scanf(" %s", user.username);
 		
 		printf("Enter password: ");
@@ -494,8 +471,8 @@ void changePassword(char filename[STRING_SIZE], int key , int which){
 	account_line_count += which;
 	
 	if(!valid_account_name){
+		remove("temp");
 		printf("\nInvalid account name\n\nPress any key to continue...");
-		getch();
 	}
 	else{
 		printf("Enter new password: ");
@@ -504,10 +481,10 @@ void changePassword(char filename[STRING_SIZE], int key , int which){
 		encrypt_algo(new_password, nums, key);
 		
 		user_file = fopen(filename, "r");
-
+		
 		temp = fopen("temp", "w");
 		if(user_file == NULL){
-			printf("User file not found. Please contact administrator\n\nPress any key to continue...");
+			printf("\n\nUser file not found. Please contact administrator\n\nPress any key to continue...");
 			getch();
 		}
 		else{
@@ -527,15 +504,14 @@ void changePassword(char filename[STRING_SIZE], int key , int which){
 				else
 					fprintf(temp, "%d ", current_number);
 			}
-		}
-				
-		fclose(user_file);
-		fclose(temp);
-		remove(filename);
-		rename("temp", filename);
+			fclose(user_file);
+			fclose(temp);
+			remove(filename);
+			rename("temp", filename);
 			
-		printf("\n\nPassword successfuly changed!\n\nPress any key to continue...");
-		getch();
+			printf("\n\nPassword successfuly changed!\n\nPress any key to continue...");
+			getch();
+		}
 	}
 }
 
@@ -560,7 +536,8 @@ void deletePassword(char filename[STRING_SIZE], int key){
 	else{
 		user_file = fopen(filename, "r");
 		temp = fopen("temp", "w");
-		while(fscanf(user_file, "%d", &current_number) != EOF){
+		if(user_file != NULL){
+			while(fscanf(user_file, "%d", &current_number) != EOF){
 				if(current_number == END_LINE || current_number == END_GROUP)
 					line_count++;
 				
@@ -579,16 +556,22 @@ void deletePassword(char filename[STRING_SIZE], int key){
 				}
 				else
 					fprintf(temp, "%d ", current_number);
+			}
+			fclose(user_file);
+			fclose(temp);
+			remove(filename);
+			rename("temp", filename);
+			
+			printf("\"%s\" has been deleted\n\nPress any key to continue...", user.account_name);
+			getch();
+			
+			fclose(user_file);
 		}
-		fclose(user_file);
-		fclose(temp);
-		remove(filename);
-		rename("temp", filename);
-		
-		printf("\"%s\" has been deleted\n\nPress any key to continue...", user.account_name);
-		getch();
+		else{
+			printf("Error! Could not open file. Please contact administrator.\n\nPress any key to continue...");
+			getch();	
+		}
 	}
-	fclose(user_file);	
 }
 
 void endScreen(){
