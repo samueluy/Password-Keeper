@@ -36,12 +36,13 @@ Check if, and so where is the similar string that is inputted by the user
 input = String that is provided by the user. This is what the user wants to search for similarities
 filename = Name of the file that the user wants to search for similarities
 key = Key that is entered by the user (or the programmer i.e. common file) upon log in
+which = Which credential to search for. | 1 = Username(common)/Account, 2 = Password(common)/Username, 3 = Filename(common)/Password
 *line_count = Value of markers passed (i.e END_LINE || END_GROUP, *line_count += 1)
 
 Return 0 = No similarities
 Return 1 = Found similarities
 */
-int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int key, int *line_count);
+int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int which, int key, int *line_count);
 
 /* Store Credentials:
 Prints the encrypted value of the inputs to a given file.
@@ -163,4 +164,3 @@ int welcomeScreen();
 Goodbye message before exiting the program
 */
 void endScreen();
-
