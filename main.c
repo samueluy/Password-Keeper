@@ -1,6 +1,7 @@
 /*
-TODO:
-(BUG) Filename found sa new account
+NAME: UY, SAMUEL JEDIDIAH A.
+ID NUMBER: 12007951
+SECTION: CCPROG2 - S17
 */
 
 #include <stdio.h>
