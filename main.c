@@ -1,12 +1,6 @@
 /*
 TODO:
-(MODIFY) if file is NULL
-
-(BACKUP) Create regular input for password (scanf)
-
 (BUG) Filename found sa new account
-
-(FEATURE) Ascii art (Align to center)
 */
 
 #include <stdio.h>
@@ -19,7 +13,7 @@ int main(void){
 	char filename[STRING_SIZE], temp_key[STRING_SIZE];
 	
 	while(nSuccess == 2){
-		nInput = welcomeScreen(); // open welcome screen. return user input to nInput
+		nInput = welcomeScreen();
 		switch (nInput){
 			case 1:
 				nSuccess = login(filename, temp_key);
@@ -36,8 +30,8 @@ int main(void){
 	key = keyGen(temp_key);
 	
 	while(nInput!=6 && nSuccess){
-		nInput = mainMenu(); // open main menu. return user input to nInput
-		switch (nInput){ // main menu choices
+		nInput = mainMenu();
+		switch (nInput){
 			case 1:
 				displayCredentials(filename, key);
 				break;
