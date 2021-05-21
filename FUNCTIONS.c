@@ -14,7 +14,7 @@ int validInput(int nMaxInput){
 	printf("Enter: ");
 	nInput = getch() - '0';
 
-	while(!nValid){
+	while(!nValid){ // keep on prompting user for a valid input
 		if(nInput > 0 && nInput <= nMaxInput)
 			nValid=1;
 		else{
@@ -62,7 +62,7 @@ void encrypt_algo(char input[STRING_SIZE], int nums[STRING_SIZE], int key){
     int i, temp=0, count=0;
     int reset = key % 5;
     
-    key += strlen(input); // salt
+    key += strlen(input); // add the length of the input to the key (salt)
     
     for(i=0; i<strlen(input); i++) // get ascii values of user string input.
     	nums[i] = (int) input[i];
@@ -113,10 +113,10 @@ void store_credentials(char input[STRING_SIZE], char filename[STRING_SIZE], int 
 
 void decrypt_algo(int nums[STRING_SIZE], int nums_length, int key, char decrypted[STRING_SIZE]){
     int i;
-    int count=nums_length+1; // get string length for subtract key count
+    int count=nums_length+1; // get string length to subtract key count
     int reset = key % 5;
 	
-	key += nums_length; // SALT
+	key += nums_length; // subtract the length of the input to the key (salt)
     for(i=nums_length; i>=0; i--){
     	if(i == 0) // first character of string
         	nums[i] -= key;
@@ -148,7 +148,7 @@ int check_same(char input[STRING_SIZE], char filename[STRING_SIZE], int which, i
 		while(fscanf(user_file, "%d", &current_num) != EOF){
 			temp[i] = current_num;
 			if(current_num == END_LINE || current_num == END_GROUP){
-				detail_count++;
+				detail_count++; // to match with "which" - check documentation
 				*line_count += 1;
 				if(strlen(input) > length)
 					length = strlen(input);
@@ -206,7 +206,7 @@ int login(char filename[STRING_SIZE], char temp_key[STRING_SIZE]){
 	
 	system("cls");
 	passwordKeeperArt();
-	while(!nContinue){
+	while(!nContinue){ // [1] Try again
 		common = fopen("common", "r");
 		valid_username=0, nValid=0, line_count=0, i=0, y=0, username_line_count=0; // reset all values
 		
